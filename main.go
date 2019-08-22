@@ -12,7 +12,7 @@ import (
 	"vcss/statuspage"
 )
 
-// Version Control Systems Status - A tool for fetching operational status from different VC providers
+// Version Control Systems Status - A tool for fetching operational status from different VCS providers
 
 const GithubStatusEndpointSummary = "https://kctbh9vrtdwd.statuspage.io/api/v2/summary.json"
 const BitBucketStatusEndpointSummary = "https://bqlf8qjztdtr.statuspage.io/api/v2/summary.json"
@@ -37,11 +37,15 @@ func (t *Target) Set(value string) error {
 }
 
 var target Target
+var raw bool
+var pretty bool
 
 func init() {
 	usage := "which VCS to target - accepts gh (github), bb (bitbucket)"
 	flag.Var(&target, "target", usage)
 	flag.Var(&target, "t", usage)
+	flag.BoolVar(&raw, "r", false, "Print raw operational status")
+	flag.BoolVar(&pretty, "p", false, "Pretty print raw output")
 }
 
 func main() {
@@ -79,7 +83,19 @@ func getVCStatusAndPrint(ep string) {
 		logrus.Error(err)
 		os.Exit(1)
 	}
-	printGithubStatus(res)
+
+	if raw && !pretty {
+		fmt.Println(res)
+	} else if pretty && raw || pretty && !raw {
+		b, err := json.MarshalIndent(res, "", "\t")
+		if err != nil {
+			logrus.Error(err)
+			os.Exit(1)
+		}
+		fmt.Println(string(b))
+	} else {
+		printGithubStatus(res)
+	}
 }
 
 func getStatus(ep string) (res []byte, err error) {
